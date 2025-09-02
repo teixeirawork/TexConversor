@@ -4,7 +4,7 @@
 
 onmessage = async (e) => {
     // A API do Render.com. Substitua pela sua URL real e adicione o endpoint /convert.
-    const API_URL = 'https://texconversor.onrender.com/convert'; 
+    const API_URL = 'https://texconversor.onrender.com/convert';
     
     // Recebe os dados do arquivo do script principal
     const file = e.data;
