@@ -3,143 +3,165 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TexPDF - Conversor Gratuito</title>
+    <title>TexConversor - de PDF para DOCX</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
         body {
             font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .container {
+            max-width: 600px;
+        }
+        .upload-area {
+            border-style: dashed;
+            border-color: #d1d5db;
+            background-color: #fafafa;
+            transition: all 0.3s ease;
+        }
+        .upload-area.drag-over {
+            background-color: #e5e7eb;
+            border-color: #9ca3af;
+        }
+        .loading-bar {
+            background-color: #10b981;
+            transition: width 0.3s ease;
         }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+<body class="flex items-center justify-center min-h-screen p-4">
 
-    <div id="container" class="bg-white rounded-lg shadow-lg p-8 w-full max-w-2xl text-center">
-        <h1 class="text-4xl font-bold text-gray-800 mb-2">TexPDF</h1>
-        <p class="text-gray-600 mb-8">Conversor de PDF para Word Grátis</p>
+<div class="container bg-white shadow-xl rounded-2xl p-8 space-y-6 text-center">
+    <h1 class="text-3xl font-bold text-gray-800">TexConversor de PDF para DOCX</h1>
+    <p class="text-gray-500">
+        Selecione um arquivo PDF para convertê-lo em um documento Word (.docx) editável.
+    </p>
 
-        <div id="drop-area" class="border-2 border-dashed border-gray-300 rounded-lg p-12 transition-all duration-300 hover:border-blue-500 hover:bg-gray-50 cursor-pointer mb-6"
-             ondragover="handleDragOver(event);" ondragleave="handleDragLeave(event);" ondrop="handleDrop(event);">
-            <div id="upload-content">
-                <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-16 w-16 text-gray-400" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
-                </svg>
-                <p class="mt-4 text-gray-600">Arraste e solte o seu PDF aqui ou</p>
-                <label for="file-input" class="mt-2 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer">
-                    Selecionar PDF
-                </label>
-            </div>
-            <input id="file-input" type="file" class="hidden" accept="application/pdf" onchange="handleFileSelect(event)">
-        </div>
-        
-        <div id="progress-container" class="hidden">
-            <p class="text-lg text-gray-700 font-semibold mb-2">Convertendo...</p>
-            <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
-            </div>
-            <p id="progress-text" class="text-sm text-gray-500 mt-2">0%</p>
-        </div>
-
-        <div id="download-container" class="hidden">
-            <p class="text-lg text-green-600 font-semibold mb-4">Conversão concluída!</p>
-            <a id="download-link" href="#" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
-                Baixar arquivo Word
-            </a>
-        </div>
-
-        <div id="error-container" class="hidden mt-4">
-            <p class="text-red-500 font-semibold">Ocorreu um erro. Por favor, tente novamente.</p>
-        </div>
+    <!-- Área de Upload -->
+    <div id="drop-area" class="upload-area flex flex-col items-center justify-center p-10 rounded-xl cursor-pointer">
+        <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-4-4v0a4 4 0 014-4h4l1-1h5.828a2 2 0 011.414.586L19 9l-1 1v7a2 2 0 01-2 2H7z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11l-3-3m0 0L9 11m3-3v7"></path>
+        </svg>
+        <p class="mt-2 text-gray-600">Arraste e solte o arquivo aqui, ou <span class="text-indigo-500 font-medium">clique para selecionar</span></p>
+        <input type="file" id="file-input" accept=".pdf" class="hidden">
     </div>
 
+    <!-- Mensagens de Status -->
+    <div id="status-message" class="text-gray-600 font-medium hidden"></div>
+
+    <!-- Barra de Progresso -->
+    <div id="progress-container" class="w-full bg-gray-200 rounded-full h-2.5 hidden">
+        <div id="progress-bar" class="loading-bar h-2.5 rounded-full" style="width: 0%;"></div>
+    </div>
+
+    <!-- Mensagem de Erro/Sucesso -->
+    <div id="result-message" class="text-sm font-medium"></div>
+
+    <!-- Script de manipulação -->
     <script>
         const dropArea = document.getElementById('drop-area');
-        const uploadContent = document.getElementById('upload-content');
+        const fileInput = document.getElementById('file-input');
+        const statusMessage = document.getElementById('status-message');
         const progressContainer = document.getElementById('progress-container');
         const progressBar = document.getElementById('progress-bar');
-        const progressText = document.getElementById('progress-text');
-        const downloadContainer = document.getElementById('download-container');
-        const downloadLink = document.getElementById('download-link');
-        const errorContainer = document.getElementById('error-container');
+        const resultMessage = document.getElementById('result-message');
+        
+        let worker;
 
-        // Cria a instância do Web Worker de forma robusta
-        const workerUrl = new URL('converter.worker.js', window.location.href);
-        const worker = new Worker(workerUrl);
+        // Adiciona um listener para a mensagem do worker
+        const handleWorkerMessage = (e) => {
+            const { progress, blob, error } = e.data;
 
-        worker.onmessage = function(event) {
-            const { type, payload } = event.data;
-            if (type === 'progress') {
-                updateProgress(payload.progress);
-            } else if (type === 'success') {
-                const blob = new Blob([payload.data], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
-                const url = URL.createObjectURL(blob);
-                downloadLink.href = url;
-                downloadLink.download = payload.fileName;
-                showDownload();
-            } else if (type === 'error') {
-                showError(payload.error);
+            if (progress !== undefined) {
+                progressBar.style.width = `${progress}%`;
+            } else if (blob) {
+                // Sucesso: cria um link para download
+                const downloadUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = blob.name || 'documento.docx';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(downloadUrl);
+                
+                statusMessage.textContent = 'Conversão concluída! O download deve começar em breve.';
+                progressBar.style.width = '100%';
+                progressBar.classList.add('bg-green-500');
+                progressBar.classList.remove('bg-red-500');
+                showResult('Conversão bem-sucedida! O download foi iniciado.', 'success');
+                resetState();
+
+            } else if (error) {
+                // Erro: exibe a mensagem de erro
+                statusMessage.textContent = '';
+                progressBar.style.width = '0%';
+                showResult(`Ocorreu um erro: ${error}`, 'error');
+                resetState();
             }
         };
 
-        function handleDragOver(event) {
-            event.preventDefault();
-            dropArea.classList.add('border-blue-500', 'bg-gray-50');
-            dropArea.classList.remove('border-gray-300');
-        }
+        const showResult = (message, type) => {
+            resultMessage.textContent = message;
+            resultMessage.classList.remove('text-green-600', 'text-red-600');
+            if (type === 'success') {
+                resultMessage.classList.add('text-green-600');
+            } else if (type === 'error') {
+                resultMessage.classList.add('text-red-600');
+            }
+            resultMessage.classList.remove('hidden');
+        };
 
-        function handleDragLeave(event) {
-            dropArea.classList.remove('border-blue-500', 'bg-gray-50');
-            dropArea.classList.add('border-gray-300');
-        }
+        const resetState = () => {
+            if (worker) {
+                worker.terminate();
+            }
+            dropArea.classList.remove('pointer-events-none');
+            fileInput.value = null;
+        };
 
-        function handleDrop(event) {
-            event.preventDefault();
-            dropArea.classList.remove('border-blue-500', 'bg-gray-50');
-            dropArea.classList.add('border-gray-300');
-            const file = event.dataTransfer.files[0];
+        const handleFile = (file) => {
             if (file && file.type === 'application/pdf') {
-                handleFile(file);
+                statusMessage.textContent = `Enviando arquivo: ${file.name}...`;
+                statusMessage.classList.remove('hidden');
+                progressContainer.classList.remove('hidden');
+                dropArea.classList.add('pointer-events-none'); // Desabilita novos uploads
+
+                // Cria o Web Worker com um parâmetro para evitar cache
+                const timestamp = new Date().getTime();
+                const workerURL = new URL('converter.worker.js', window.location.href).href + `?v=${timestamp}`;
+                worker = new Worker(workerURL);
+                worker.onmessage = handleWorkerMessage;
+                worker.postMessage(file); // Envia o arquivo para o worker
             } else {
-                showError('Por favor, solte um arquivo PDF válido.');
+                showResult('Por favor, selecione um arquivo PDF válido.', 'error');
             }
-        }
+        };
 
-        function handleFileSelect(event) {
-            const file = event.target.files[0];
-            if (file) {
-                handleFile(file);
-            }
-        }
+        // Event Listeners para a área de upload
+        dropArea.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
 
-        function handleFile(file) {
-            uploadContent.classList.add('hidden');
-            downloadContainer.classList.add('hidden');
-            errorContainer.classList.add('hidden');
-            progressContainer.classList.remove('hidden');
+        dropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropArea.classList.add('drag-over');
+        });
 
-            // Envia o arquivo para o Web Worker
-            worker.postMessage({ file: file, fileName: file.name });
-        }
+        dropArea.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropArea.classList.remove('drag-over');
+        });
 
-        function updateProgress(value) {
-            progressBar.style.width = `${value}%`;
-            progressText.innerText = `${value}%`;
-        }
-
-        function showDownload() {
-            progressContainer.classList.add('hidden');
-            downloadContainer.classList.remove('hidden');
-        }
-
-        function showError(message) {
-            progressContainer.classList.add('hidden');
-            errorContainer.classList.remove('hidden');
-            errorContainer.querySelector('p').innerText = `Ocorreu um erro: ${message}`;
-            setTimeout(() => {
-                errorContainer.classList.add('hidden');
-                uploadContent.classList.remove('hidden');
-            }, 5000); 
-        }
+        dropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropArea.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            handleFile(file);
+        });
     </script>
+</div>
+
 </body>
 </html>
