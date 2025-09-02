@@ -3,8 +3,8 @@
 // Ele lida com a requisição da API e o processamento da resposta.
 
 onmessage = async (e) => {
-    // A API do Render.com. Substitua pela sua URL real.
-    const API_URL = 'https://sua-api.onrender.com/convert'; 
+    // A API do Render.com. Substitua pela sua URL real e adicione o endpoint /convert.
+    const API_URL = 'https://texconversor.onrender.com/convert'; 
     
     // Recebe os dados do arquivo do script principal
     const file = e.data;
