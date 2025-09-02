@@ -1,41 +1,42 @@
-self.onmessage = async function(event) {
-    const file = event.data.file;
-    const fileName = event.data.fileName;
+// worker.js
+// Este script roda em uma thread separada para não travar a UI principal.
+// Ele lida com a requisição da API e o processamento da resposta.
+
+onmessage = async (e) => {
+    // A API do Render.com. Substitua pela sua URL real.
+    const API_URL = 'https://sua-api.onrender.com/convert'; 
+    
+    // Recebe os dados do arquivo do script principal
+    const file = e.data;
+
+    if (!file) {
+        postMessage({ error: "Nenhum arquivo recebido." });
+        return;
+    }
 
     const formData = new FormData();
-    formData.append('pdf_file', file);
-
-    const API_URL = 'https://texconversor.onrender.com'; // Substitua por sua URL real do Render.com
+    formData.append('file', file);
 
     try {
-        self.postMessage({ type: 'progress', payload: { progress: 50 } });
-
         const response = await fetch(API_URL, {
             method: 'POST',
             body: formData,
         });
 
-        // Verifica se a resposta da API foi bem-sucedida
         if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Erro da API: ${response.status} - ${errorText}`);
+            // Se a resposta não for OK, lemos como texto para obter a mensagem de erro
+            const errorMessage = await response.text();
+            throw new Error(`Erro da API: ${response.status} - ${errorMessage}`);
         }
 
-        const docxBlob = await response.blob();
+        // Se a resposta for um sucesso, lemos como um Blob (arquivo)
+        const blob = await response.blob();
         
-        self.postMessage({
-            type: 'success',
-            payload: {
-                data: docxBlob,
-                fileName: fileName.replace('.pdf', '.docx')
-            }
-        });
-        
+        // Enviamos o Blob de volta para a UI principal para iniciar o download
+        postMessage({ blob: blob });
+
     } catch (error) {
-        console.error('Erro na conversão:', error);
-        self.postMessage({
-            type: 'error',
-            payload: { error: error.message }
-        });
+        // Em caso de erro, enviamos a mensagem para a UI principal
+        postMessage({ error: error.message });
     }
 };
