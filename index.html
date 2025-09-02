@@ -2,8 +2,8 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content=  "width=device-width, initial-scale=1.0">
-    <title>TexConversor - Conversor Gratuito</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TexPDF - Conversor Gratuito</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -62,9 +62,24 @@
         const downloadLink = document.getElementById('download-link');
         const errorContainer = document.getElementById('error-container');
 
-        // URL da sua API no Render. Lembre-se de substituir pela URL real do seu serviço.
-          const API_URL =  'https://texconversor.onrender.com';
-        //const API_URL = 'https://sua-api.onrender.com/convert'; 
+        // Cria a instância do Web Worker de forma robusta
+        const workerUrl = new URL('converter.worker.js', window.location.href);
+        const worker = new Worker(workerUrl);
+
+        worker.onmessage = function(event) {
+            const { type, payload } = event.data;
+            if (type === 'progress') {
+                updateProgress(payload.progress);
+            } else if (type === 'success') {
+                const blob = new Blob([payload.data], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+                const url = URL.createObjectURL(blob);
+                downloadLink.href = url;
+                downloadLink.download = payload.fileName;
+                showDownload();
+            } else if (type === 'error') {
+                showError(payload.error);
+            }
+        };
 
         function handleDragOver(event) {
             event.preventDefault();
@@ -84,7 +99,7 @@
             const file = event.dataTransfer.files[0];
             if (file && file.type === 'application/pdf') {
                 handleFile(file);
-            } else {    
+            } else {
                 showError('Por favor, solte um arquivo PDF válido.');
             }
         }
@@ -96,50 +111,14 @@
             }
         }
 
-        async function handleFile(file) {
-            // Esconde outras telas e mostra a barra de progresso
+        function handleFile(file) {
             uploadContent.classList.add('hidden');
             downloadContainer.classList.add('hidden');
             errorContainer.classList.add('hidden');
             progressContainer.classList.remove('hidden');
 
-            const formData = new FormData();
-            formData.append('file', file);
-            
-            // Simula o progresso
-            let progress = 0;
-            const progressInterval = setInterval(() => {
-                progress += 5;
-                if (progress <= 95) {
-                    updateProgress(progress);
-                } else {
-                    clearInterval(progressInterval);
-                }
-            }, 200);
-
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    body: formData,
-                });
-
-                clearInterval(progressInterval);
-                updateProgress(100);
-
-                if (response.ok) {
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    downloadLink.href = url;
-                    downloadLink.download = file.name.replace('.pdf', '.docx');
-                    showDownload();
-                } else {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Erro na conversão');
-                }
-            } catch (error) {
-                console.error('Erro na requisição:', error);
-                showError(error.message);
-            }
+            // Envia o arquivo para o Web Worker
+            worker.postMessage({ file: file, fileName: file.name });
         }
 
         function updateProgress(value) {
@@ -156,7 +135,6 @@
             progressContainer.classList.add('hidden');
             errorContainer.classList.remove('hidden');
             errorContainer.querySelector('p').innerText = `Ocorreu um erro: ${message}`;
-            // Reinicia a interface para permitir uma nova tentativa
             setTimeout(() => {
                 errorContainer.classList.add('hidden');
                 uploadContent.classList.remove('hidden');
